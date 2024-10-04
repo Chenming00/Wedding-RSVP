@@ -9,21 +9,60 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Info } from 'lucide-react';
+import { useToast } from "@/hooks/use-toast";
 
 const InvitationForm = () => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [attendance, setAttendance] = useState('');
-  const [guests, setGuests] = useState('0');
-  const [dietaryRestrictions, setDietaryRestrictions] = useState('');
-  const [message, setMessage] = useState('');
+  const { toast } = useToast();
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    attendance: '',
+    guests: '0',
+    dietaryRestrictions: '',
+    message: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log({ name, email, phone, attendance, guests, dietaryRestrictions, message });
-    // Here you would send the data to your backend
-    alert('邀请回复已提交！谢谢您的回复。');
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch('http://localhost:8080/rsvp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...formData, guests: parseInt(formData.guests) }),
+      });
+
+      if (response.ok) {
+        toast({
+          title: "提交成功",
+          description: "邀请回复已成功提交！谢谢您的回复。",
+        });
+        setFormData({
+          name: '', email: '', phone: '', attendance: '',
+          guests: '0', dietaryRestrictions: '', message: ''
+        });
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '提交失败');
+      }
+    } catch (error) {
+      console.error('Error submitting RSVP:', error);
+      toast({
+        title: "提交失败",
+        description: error.message || "提交过程中发生错误，请稍后再试。",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -34,94 +73,92 @@ const InvitationForm = () => {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">姓名</Label>
-            <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">邮箱</Label>
-            <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="phone">电话</Label>
-            <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required />
-          </div>
+          <FormField label="姓名" name="name" value={formData.name} onChange={handleChange} required />
+          <FormField label="邮箱" name="email" type="email" value={formData.email} onChange={handleChange} required />
+          <FormField label="电话" name="phone" type="tel" value={formData.phone} onChange={handleChange} required />
+          
           <div className="space-y-2">
             <Label>是否参加？</Label>
-            <RadioGroup value={attendance} onValueChange={setAttendance} className="flex space-x-4">
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="yes" id="yes" />
-                <Label htmlFor="yes">是</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="no" id="no" />
-                <Label htmlFor="no">否</Label>
-              </div>
+            <RadioGroup value={formData.attendance} onValueChange={(value) => handleChange({ target: { name: 'attendance', value } })} className="flex space-x-4">
+              <RadioOption value="yes" label="是" />
+              <RadioOption value="no" label="否" />
             </RadioGroup>
           </div>
-          {attendance === 'yes' && (
+          
+          {formData.attendance === 'yes' && (
             <>
-              <div className="space-y-2">
-                <Label htmlFor="guests">随行宾客数量</Label>
-                <Select value={guests} onValueChange={setGuests}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="选择随行宾客数量" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0">0</SelectItem>
-                    <SelectItem value="1">1</SelectItem>
-                    <SelectItem value="2">2</SelectItem>
-                    <SelectItem value="3">3</SelectItem>
-                    <SelectItem value="4">4</SelectItem>
-                    <SelectItem value="5">5</SelectItem>
-                    <SelectItem value="6">6</SelectItem>
-                    <SelectItem value="7">7</SelectItem>
-                    <SelectItem value="8">8</SelectItem>
-                    <SelectItem value="9">9</SelectItem>
-                    <SelectItem value="10">10</SelectItem>
-                    
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="dietary" className="flex items-center space-x-2">
-                  <span>饮食限制</span>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <Info size={16} />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>请告诉我们您的任何饮食限制或过敏情况，以便我们做好准备。</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </Label>
-                <Textarea 
-                  id="dietary" 
-                  placeholder="如有特殊饮食需求，请在此说明" 
-                  value={dietaryRestrictions} 
-                  onChange={(e) => setDietaryRestrictions(e.target.value)}
-                />
-              </div>
+              <FormField 
+                label="随行宾客数量" 
+                name="guests" 
+                value={formData.guests} 
+                onChange={handleChange}
+                component={
+                  <Select value={formData.guests} onValueChange={(value) => handleChange({ target: { name: 'guests', value } })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="选择随行宾客数量" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[...Array(11).keys()].map(num => (
+                        <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                }
+              />
+              <FormField 
+                label={
+                  <span className="flex items-center space-x-2">
+                    饮食限制
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info size={16} />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>请告诉我们您的任何饮食限制或过敏情况，以便我们做好准备。</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </span>
+                }
+                name="dietaryRestrictions"
+                value={formData.dietaryRestrictions}
+                onChange={handleChange}
+                component={<Textarea placeholder="如有特殊饮食需求，请在此说明" />}
+              />
             </>
           )}
-          <div className="space-y-2">
-            <Label htmlFor="message">留言</Label>
-            <Textarea 
-              id="message" 
-              placeholder="给新人的祝福或其他留言" 
-              value={message} 
-              onChange={(e) => setMessage(e.target.value)}
-            />
-          </div>
+          
+          <FormField 
+            label="留言" 
+            name="message" 
+            value={formData.message} 
+            onChange={handleChange}
+            component={<Textarea placeholder="给新人的祝福或其他留言" />}
+          />
         </form>
       </CardContent>
       <CardFooter>
-        <Button onClick={handleSubmit} className="w-full">提交回复</Button>
+        <Button onClick={handleSubmit} className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? '提交中...' : '提交回复'}
+        </Button>
       </CardFooter>
     </Card>
   );
 };
+
+const FormField = ({ label, name, value, onChange, required, type = "text", component }) => (
+  <div className="space-y-2">
+    <Label htmlFor={name}>{label}</Label>
+    {component || <Input id={name} name={name} type={type} value={value} onChange={onChange} required={required} />}
+  </div>
+);
+
+const RadioOption = ({ value, label }) => (
+  <div className="flex items-center space-x-2">
+    <RadioGroupItem value={value} id={value} />
+    <Label htmlFor={value}>{label}</Label>
+  </div>
+);
 
 export default InvitationForm;
