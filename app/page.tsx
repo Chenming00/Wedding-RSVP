@@ -1,164 +1,149 @@
 'use client'
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Info } from 'lucide-react';
-import { useToast } from "@/hooks/use-toast";
+import { useState } from 'react';
+import { Mail, CalendarHeart, Users, Music, AlertCircle } from 'lucide-react';
 
-const InvitationForm = () => {
-  const { toast } = useToast();
+const WeddingRSVP = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    phone: '',
-    attendance: '',
-    guests: '0',
+    attending: 'yes',
+    guestCount: 1,
     dietaryRestrictions: '',
-    message: ''
+    songRequest: '',
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsSubmitting(true);
-
-    try {
-      const response = await fetch('http://localhost:8080/rsvp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, guests: parseInt(formData.guests) }),
-      });
-
-      if (response.ok) {
-        toast({
-          title: "提交成功",
-          description: "邀请回复已成功提交！谢谢您的回复。",
-        });
-        setFormData({
-          name: '', email: '', phone: '', attendance: '',
-          guests: '0', dietaryRestrictions: '', message: ''
-        });
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || '提交失败');
-      }
-    } catch (error) {
-      console.error('Error submitting RSVP:', error);
-      toast({
-        title: "提交失败",
-        description: error.message || "提交过程中发生错误，请稍后再试。",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
+    if (!formData.name || !formData.email) {
+      setError('请填写姓名和邮箱');
+      return;
     }
+    // 这里可以添加API调用来保存数据
+    setSubmitted(true);
+    setError('');
   };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  if (submitted) {
+    return (
+      <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-lg text-center">
+        <div className="mb-6">
+          <CalendarHeart className="w-16 h-16 mx-auto text-pink-500" />
+        </div>
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">感谢您的回复！</h2>
+        <p className="text-gray-600">我们期待在婚礼上见到您。</p>
+      </div>
+    );
+  }
 
   return (
-    <Card className="w-full max-w-[500px] mx-auto">
-      <CardHeader>
-        <CardTitle className="text-2xl font-bold text-center">婚礼邀请函</CardTitle>
-        <CardDescription className="text-center">我们诚挚地邀请您参加我们的婚礼</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <FormField label="姓名" name="name" value={formData.name} onChange={handleChange} required />
-          <FormField label="邮箱" name="email" type="email" value={formData.email} onChange={handleChange} required />
-          <FormField label="电话" name="phone" type="tel" value={formData.phone} onChange={handleChange} required />
-          
-          <div className="space-y-2">
-            <Label>是否参加？</Label>
-            <RadioGroup value={formData.attendance} onValueChange={(value) => handleChange({ target: { name: 'attendance', value } })} className="flex space-x-4">
-              <RadioOption value="yes" label="是" />
-              <RadioOption value="no" label="否" />
-            </RadioGroup>
+    <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-lg">
+      <div className="text-center mb-8">
+        <CalendarHeart className="w-16 h-16 mx-auto text-pink-500" />
+        <h1 className="text-3xl font-bold text-gray-800 mt-4">婚礼邀请回执</h1>
+        <p className="text-gray-600 mt-2">2024年12月25日</p>
+      </div>
+
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 rounded-lg flex items-center gap-2 text-red-600">
+          <AlertCircle className="w-5 h-5" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div>
+          <label className="block text-gray-700 mb-2 font-medium">您的姓名</label>
+          <div className="relative">
+            <Users className="w-5 h-5 absolute left-3 top-3 text-gray-400" />
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+              placeholder="请输入您的姓名"
+            />
           </div>
-          
-          {formData.attendance === 'yes' && (
-            <>
-              <FormField 
-                label="随行宾客数量" 
-                name="guests" 
-                value={formData.guests} 
+        </div>
+
+        <div>
+          <label className="block text-gray-700 mb-2 font-medium">邮箱地址</label>
+          <div className="relative">
+            <Mail className="w-5 h-5 absolute left-3 top-3 text-gray-400" />
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+              placeholder="请输入您的邮箱"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-gray-700 mb-2 font-medium">是否参加？</label>
+          <select
+            name="attending"
+            value={formData.attending}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+          >
+            <option value="yes">是的，我会参加</option>
+            <option value="no">抱歉，无法参加</option>
+          </select>
+        </div>
+
+        {formData.attending === 'yes' && (
+          <>
+            <div>
+              <label className="block text-gray-700 mb-2 font-medium">随行人数</label>
+              <input
+                type="number"
+                name="guestCount"
+                value={formData.guestCount}
                 onChange={handleChange}
-                component={
-                  <Select value={formData.guests} onValueChange={(value) => handleChange({ target: { name: 'guests', value } })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="选择随行宾客数量" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[...Array(11).keys()].map(num => (
-                        <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                }
+                min="1"
+                max="5"
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
               />
-              <FormField 
-                label={
-                  <span className="flex items-center space-x-2">
-                    饮食限制
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <Info size={16} />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>请告诉我们您的任何饮食限制或过敏情况，以便我们做好准备。</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </span>
-                }
+            </div>
+
+            <div>
+              <label className="block text-gray-700 mb-2 font-medium">饮食禁忌</label>
+              <textarea
                 name="dietaryRestrictions"
                 value={formData.dietaryRestrictions}
                 onChange={handleChange}
-                component={<Textarea placeholder="如有特殊饮食需求，请在此说明" />}
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                placeholder="如有特殊饮食要求，请在此说明"
+                rows={3}
               />
-            </>
-          )}
-          
-          <FormField 
-            label="留言" 
-            name="message" 
-            value={formData.message} 
-            onChange={handleChange}
-            component={<Textarea placeholder="给新人的祝福或其他留言" />}
-          />
-        </form>
-      </CardContent>
-      <CardFooter>
-        <Button onClick={handleSubmit} className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? '提交中...' : '提交回复'}
-        </Button>
-      </CardFooter>
-    </Card>
+            </div>
+
+          </>
+        )}
+
+        <button
+          type="submit"
+          className="w-full bg-pink-500 text-white py-3 px-4 rounded-lg hover:bg-pink-600 transition duration-200"
+        >
+          提交回执
+        </button>
+      </form>
+    </div>
   );
 };
 
-const FormField = ({ label, name, value, onChange, required, type = "text", component }) => (
-  <div className="space-y-2">
-    <Label htmlFor={name}>{label}</Label>
-    {component || <Input id={name} name={name} type={type} value={value} onChange={onChange} required={required} />}
-  </div>
-);
-
-const RadioOption = ({ value, label }) => (
-  <div className="flex items-center space-x-2">
-    <RadioGroupItem value={value} id={value} />
-    <Label htmlFor={value}>{label}</Label>
-  </div>
-);
-
-export default InvitationForm;
+export default WeddingRSVP;
